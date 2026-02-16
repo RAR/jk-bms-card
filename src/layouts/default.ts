@@ -5,7 +5,7 @@ import { EntityKey } from '../const';
 import { JkBmsCardConfig } from '../interfaces';
 import { localize } from '../localize/localize';
 import { globalData } from '../helpers/globals';
-import {navigate, getState, configOrEnum, formatDeltaVoltage} from '../helpers/utils';
+import {navigate, getState, configOrEnum, formatDeltaVoltage, getRelevantEntityIds, hasRelevantStateChanged} from '../helpers/utils';
 
 @customElement('jk-bms-default-layout')
 export class JkBmsDefaultLayout extends LitElement {
@@ -16,6 +16,21 @@ export class JkBmsDefaultLayout extends LitElement {
     maxCellId: string = '';
     maxDeltaV: number = 0.000;
     shouldBalance: boolean = false;
+
+    private _entityIds: Set<string> = new Set();
+
+    protected shouldUpdate(changedProps: Map<string, any>): boolean {
+        if (changedProps.has('config')) {
+            this._entityIds = getRelevantEntityIds(this.config);
+            return true;
+        }
+        if (changedProps.has('hass')) {
+            const oldHass = changedProps.get('hass') as HomeAssistant;
+            if (!oldHass || this._entityIds.size === 0) return true;
+            return hasRelevantStateChanged(this.hass, oldHass, this._entityIds);
+        }
+        return true;
+    }
 
     static styles = css`
         .grid {
@@ -227,6 +242,7 @@ export class JkBmsDefaultLayout extends LitElement {
         const balanceCurrent = parseFloat(this.getState(EntityKey.balancing_current, 2, '0'));
         const powerNumber = parseFloat(this.getState(EntityKey.power, 2, '0'));
         const triggerV = Number(this.getState(EntityKey.balance_trigger_voltage, 2, "", "number"));
+        const mosTemp = this.getState(EntityKey.power_tube_temperature);
 
         this.shouldBalance = this.maxDeltaV >= triggerV;
 
@@ -275,7 +291,7 @@ export class JkBmsDefaultLayout extends LitElement {
               ${localize('stats.remainingAmps')} <span class="clickable" @click=${(e) => this._navigate(e, EntityKey.capacity_remaining)}>${this.getState(EntityKey.capacity_remaining)} Ah</span><br>
               ${localize('stats.cycles')} <span class="clickable" @click=${(e) => this._navigate(e, EntityKey.charging_cycles)}>${this.getState(EntityKey.charging_cycles)}</span><br>
               ${localize('stats.delta')} <span class="${deltaClass}" @click=${(e) => this._navigate(e, EntityKey.delta_cell_voltage)}> ${formatDeltaVoltage(this.config.deltaVoltageUnit, this.maxDeltaV)} </span><br>
-              ${localize('stats.mosfetTemp')} <span class="clickable" @click=${(e) => this._navigate(e, EntityKey.power_tube_temperature)}>${this.getState(EntityKey.power_tube_temperature)} °C</span>
+              ${mosTemp ? html`${localize('stats.mosfetTemp')} <span class="clickable" @click=${(e) => this._navigate(e, EntityKey.power_tube_temperature)}>${mosTemp} °C</span>` : ''}
               ${this._renderTemps(2)}
           </div>
         </div>
@@ -336,7 +352,7 @@ export class JkBmsDefaultLayout extends LitElement {
         this.minCellId = this.getState(EntityKey.min_voltage_cell, 0);
         this.maxCellId = this.getState(EntityKey.max_voltage_cell, 0);
 
-        if (!this.minCellId || !this.maxCellId || !this.maxDeltaV || this.maxDeltaV == 0 || true) {
+        if (!this.minCellId || !this.maxCellId || !this.maxDeltaV || this.maxDeltaV == 0) {
             this.calculateDynamicMinMaxCellId(totalCells)
         }
 

@@ -60,6 +60,69 @@ export const getState = (hass: HomeAssistant, config: JkBmsCardConfig, entityKey
     return state ?? defaultValue;
 }
 
+/**
+ * Build the set of HA entity IDs this card config cares about.
+ * Used by shouldUpdate() to skip renders when unrelated entities change.
+ */
+export const getRelevantEntityIds = (config: JkBmsCardConfig): Set<string> => {
+    const ids = new Set<string>();
+    if (!config?.prefix) return ids;
+
+    const resolve = (key: EntityKey, type = 'sensor'): void => {
+        const val = configOrEnum(config, key);
+        if (!val) return;
+        ids.add(val.includes('.') ? val : `${type}.${config.prefix}_${val}`);
+    };
+
+    // Core sensors
+    [
+        EntityKey.delta_cell_voltage, EntityKey.balancing_current, EntityKey.power,
+        EntityKey.total_voltage, EntityKey.total_battery_capacity_setting,
+        EntityKey.total_charging_cycle_capacity, EntityKey.average_cell_voltage,
+        EntityKey.current, EntityKey.state_of_charge, EntityKey.capacity_remaining,
+        EntityKey.charging_cycles, EntityKey.power_tube_temperature,
+        EntityKey.min_voltage_cell, EntityKey.max_voltage_cell, EntityKey.errors,
+        EntityKey.total_runtime_formatted,
+    ].forEach(k => resolve(k));
+
+    // Switches
+    [EntityKey.charging, EntityKey.discharging, EntityKey.balancer, EntityKey.heater]
+        .forEach(k => resolve(k, 'switch'));
+
+    // Numbers
+    resolve(EntityKey.balance_trigger_voltage, 'number');
+
+    // Temperature sensors
+    for (let i = 1; i <= ((config as any).tempSensorsCount ?? 0); i++) {
+        const key = EntityKey[`temperature_sensor_${i}`];
+        if (key) resolve(key as EntityKey);
+    }
+
+    // Cell voltages and resistances
+    for (let i = 1; i <= (config.cellCount ?? 16); i++) {
+        const vKey = EntityKey[`cell_voltage_${i}`];
+        if (vKey) resolve(vKey as EntityKey);
+        const rKey = EntityKey[`cell_resistance_${i}`];
+        if (rKey) resolve(rKey as EntityKey);
+    }
+
+    return ids;
+};
+
+/**
+ * Returns true if any tracked entity state reference changed between hass updates.
+ */
+export const hasRelevantStateChanged = (
+    newHass: HomeAssistant,
+    oldHass: HomeAssistant,
+    entityIds: Set<string>
+): boolean => {
+    for (const id of entityIds) {
+        if (newHass.states[id] !== oldHass.states[id]) return true;
+    }
+    return false;
+};
+
 export const formatDeltaVoltage = (
     unit: 'V' | 'mV' = 'V',
     maxDeltaV: number | string

@@ -4,7 +4,7 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { EntityKey } from '../const';
 import { JkBmsCardConfig } from '../interfaces';
 import { globalData } from '../helpers/globals';
-import { configOrEnum, formatDeltaVoltage, getState, navigate } from '../helpers/utils';
+import { configOrEnum, formatDeltaVoltage, getState, navigate, getRelevantEntityIds, hasRelevantStateChanged } from '../helpers/utils';
 
 @customElement('jk-bms-core-reactor-layout')
 export class JkBmsCoreReactorLayout extends LitElement {
@@ -18,6 +18,24 @@ export class JkBmsCoreReactorLayout extends LitElement {
 
     @property() private historyData: Record<string, any[]> = {};
     private _historyInterval?: number;
+
+    private _entityIds: Set<string> = new Set();
+
+    protected shouldUpdate(changedProps: Map<string, any>): boolean {
+        if (changedProps.has('config')) {
+            this._entityIds = getRelevantEntityIds(this.config);
+            return true;
+        }
+        if (changedProps.has('historyData')) {
+            return true;
+        }
+        if (changedProps.has('hass')) {
+            const oldHass = changedProps.get('hass') as HomeAssistant;
+            if (!oldHass || this._entityIds.size === 0) return true;
+            return hasRelevantStateChanged(this.hass, oldHass, this._entityIds);
+        }
+        return true;
+    }
 
     static styles = css`
         :host {
@@ -405,7 +423,7 @@ export class JkBmsCoreReactorLayout extends LitElement {
     }
 
     updated(changedProps: Map<string, any>) {
-        if (changedProps.has('hass')) {
+        if (changedProps.has('hass') && !changedProps.has('historyData')) {
             this._updateRealtimeHistory();
         }
     }
@@ -696,13 +714,14 @@ export class JkBmsCoreReactorLayout extends LitElement {
                     </div>
 
                     <div class="stats-panel">
+                        ${mosTemp ? html`
                         <div class="metric-group">
                             ${this._renderSparkline(EntityKey.power_tube_temperature, '#FFA500')}
                             <div class="stat-label">MOS Temp:</div>
                             <div class="stat-value val-white clickable"
                                  @click=${(e) => this._navigate(e, EntityKey.power_tube_temperature)}>${mosTemp} °C
                             </div>
-                        </div>
+                        </div>` : ''}
 
                         <div class="metric-group">
                             ${this._renderSparkline(EntityKey.delta_cell_voltage, '#41CD52')}
