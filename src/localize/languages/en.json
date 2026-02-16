@@ -6,6 +6,7 @@
   },
   "config": {
     "source": "Data source",
+    "bmsType": "BMS type",
     "title": "Title",
     "prefix": "Prefix of the sensors",
     "cellCount": "Number of cells",

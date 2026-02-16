@@ -49,6 +49,7 @@ export class JkBmsCard extends LitElement {
             title: localize("title"),
             prefix: "jk_bms",
             source: "jk-bms",
+            bmsType: "jk",
             cellCount: 16,
             cellColumns: 2,
             cellLayout: "bankMode",

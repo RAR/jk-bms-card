@@ -69,6 +69,25 @@ export class JkBmsCardEditor extends LitElement implements LovelaceCardEditor {
                                     }
                                 }
                             },
+                            ...(this._config?.source === 'yambms' ? [{
+                                name: 'bmsType',
+                                selector: {
+                                    select: {
+                                        options: [
+                                            { label: 'JK BMS', value: 'jk' },
+                                            { label: 'Ecoworthy', value: 'ecoworthy' },
+                                            { label: 'EG4', value: 'eg4' },
+                                            { label: 'JBD', value: 'jbd' },
+                                            { label: 'PACE', value: 'pace' },
+                                            { label: 'SEPLOS V1/V2', value: 'seplos-v1v2' },
+                                            { label: 'SEPLOS V3', value: 'seplos-v3' },
+                                            { label: 'BASEN', value: 'basen' },
+                                            { label: 'DEYE CAN', value: 'deye' },
+                                            { label: 'Other', value: 'other' },
+                                        ]
+                                    }
+                                }
+                            }] : []),
                         ],
                     },
                 ],

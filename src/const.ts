@@ -2,6 +2,7 @@ export const EDITOR_NAME = 'jk-bms-content-card-editor';
 export const MAIN_NAME = 'jk-bms-card';
 
 export type SourceType = 'jk-bms' | 'yambms';
+export type BmsType = 'jk' | 'ecoworthy' | 'eg4' | 'jbd' | 'pace' | 'seplos-v1v2' | 'seplos-v3' | 'basen' | 'deye' | 'other';
 
 export enum EntityKey {
     delta_cell_voltage ='delta_cell_voltage',
@@ -227,20 +228,14 @@ export enum EntityKey {
     temperature_sensor_4 ='temperature_sensor_4',
 }
 
-// YamBMS uses different sensor name slugs for some entities.
-// Only keys that differ from the JK BMS defaults need to be listed here.
-export const YAMBMS_ENTITY_MAP: Partial<Record<EntityKey, string>> = {
+// Common YamBMS overrides — apply regardless of BMS type.
+// Only keys that differ from the JK BMS defaults need to be listed.
+export const YAMBMS_COMMON_MAP: Partial<Record<EntityKey, string>> = {
     // SoC / capacity
     [EntityKey.state_of_charge]: 'battery_soc',
     [EntityKey.capacity_remaining]: 'battery_capacity_remaining',
     // Errors
     [EntityKey.errors]: 'errors_bitmask',
-    // Temperature sensors ("cell temperature N" in Ecoworthy YamBMS)
-    [EntityKey.temperature_sensor_1]: 'cell_temperature_1',
-    [EntityKey.temperature_sensor_2]: 'cell_temperature_2',
-    [EntityKey.temperature_sensor_3]: 'cell_temperature_3',
-    [EntityKey.temperature_sensor_4]: 'cell_temperature_4',
-    [EntityKey.power_tube_temperature]: 'mosfet_temperature',
     // Cell voltages 1–9 are zero-padded in YamBMS ("cell voltage 01")
     [EntityKey.cell_voltage_1]: 'cell_voltage_01',
     [EntityKey.cell_voltage_2]: 'cell_voltage_02',
@@ -261,4 +256,66 @@ export const YAMBMS_ENTITY_MAP: Partial<Record<EntityKey, string>> = {
     [EntityKey.cell_resistance_7]: 'cell_resistance_07',
     [EntityKey.cell_resistance_8]: 'cell_resistance_08',
     [EntityKey.cell_resistance_9]: 'cell_resistance_09',
+};
+
+// Per-BMS-type overrides layered on top of the common map.
+// Each BMS type in YamBMS may use different naming for temperatures, etc.
+export const YAMBMS_BMS_TYPE_MAP: Record<BmsType, Partial<Record<EntityKey, string>>> = {
+    // JK BMS: temperature names match the card defaults — no overrides needed
+    'jk': {},
+    // Ecoworthy: "cell temperature N", "mosfet temperature"
+    'ecoworthy': {
+        [EntityKey.temperature_sensor_1]: 'cell_temperature_1',
+        [EntityKey.temperature_sensor_2]: 'cell_temperature_2',
+        [EntityKey.temperature_sensor_3]: 'cell_temperature_3',
+        [EntityKey.temperature_sensor_4]: 'cell_temperature_4',
+        [EntityKey.power_tube_temperature]: 'mosfet_temperature',
+    },
+    // EG4: same naming as Ecoworthy
+    'eg4': {
+        [EntityKey.temperature_sensor_1]: 'cell_temperature_1',
+        [EntityKey.temperature_sensor_2]: 'cell_temperature_2',
+        [EntityKey.temperature_sensor_3]: 'cell_temperature_3',
+        [EntityKey.temperature_sensor_4]: 'cell_temperature_4',
+        [EntityKey.power_tube_temperature]: 'mosfet_temperature',
+    },
+    // JBD: "temperature N" (bare)
+    'jbd': {
+        [EntityKey.temperature_sensor_1]: 'temperature_1',
+        [EntityKey.temperature_sensor_2]: 'temperature_2',
+        [EntityKey.temperature_sensor_3]: 'temperature_3',
+        [EntityKey.temperature_sensor_4]: 'temperature_4',
+    },
+    // PACE: "battery temperature N", "mosfet temperature"
+    'pace': {
+        [EntityKey.temperature_sensor_1]: 'battery_temperature_1',
+        [EntityKey.temperature_sensor_2]: 'battery_temperature_2',
+        [EntityKey.temperature_sensor_3]: 'battery_temperature_3',
+        [EntityKey.temperature_sensor_4]: 'battery_temperature_4',
+        [EntityKey.power_tube_temperature]: 'mosfet_temperature',
+    },
+    // SEPLOS V1/V2: "temperature N", "mosfet temperature"
+    'seplos-v1v2': {
+        [EntityKey.temperature_sensor_1]: 'temperature_1',
+        [EntityKey.temperature_sensor_2]: 'temperature_2',
+        [EntityKey.temperature_sensor_3]: 'temperature_3',
+        [EntityKey.temperature_sensor_4]: 'temperature_4',
+        [EntityKey.power_tube_temperature]: 'mosfet_temperature',
+    },
+    // SEPLOS V3: cell_temp_N, power_temp (note: these use underscores in the name)
+    'seplos-v3': {
+        [EntityKey.temperature_sensor_1]: 'cell_temp_1',
+        [EntityKey.temperature_sensor_2]: 'cell_temp_2',
+        [EntityKey.temperature_sensor_3]: 'cell_temp_3',
+        [EntityKey.temperature_sensor_4]: 'cell_temp_4',
+        [EntityKey.power_tube_temperature]: 'power_temp',
+    },
+    // BASEN: "temperature sensor N" (matches default), "temperature MOSFET"
+    'basen': {
+        [EntityKey.power_tube_temperature]: 'temperature_mosfet',
+    },
+    // DEYE CAN: no individual temp sensors available
+    'deye': {},
+    // Other / unknown — no overrides, use defaults
+    'other': {},
 };

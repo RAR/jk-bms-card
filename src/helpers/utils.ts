@@ -1,5 +1,5 @@
 import {HomeAssistant} from 'custom-card-helpers';
-import {EntityKey, YAMBMS_ENTITY_MAP} from '../const';
+import {EntityKey, YAMBMS_COMMON_MAP, YAMBMS_BMS_TYPE_MAP} from '../const';
 import {JkBmsCardConfig} from '../interfaces';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -22,8 +22,16 @@ export const configOrEnum = (config: JkBmsCardConfig, entityId: EntityKey) => {
     if (configValue && configValue.length > 1) return configValue;
     // Apply YamBMS entity name mapping when source is 'yambms'
     if (config?.source === 'yambms') {
-        const mapped = YAMBMS_ENTITY_MAP[entityId];
-        if (mapped) return mapped;
+        // BMS-type-specific overrides take priority
+        const bmsType = config.bmsType ?? 'jk';
+        const bmsMap = YAMBMS_BMS_TYPE_MAP[bmsType];
+        if (bmsMap) {
+            const bmsOverride = bmsMap[entityId];
+            if (bmsOverride) return bmsOverride;
+        }
+        // Then common YamBMS overrides
+        const common = YAMBMS_COMMON_MAP[entityId];
+        if (common) return common;
     }
     return entityId?.toString();
 }
