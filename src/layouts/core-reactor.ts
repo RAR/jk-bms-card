@@ -721,7 +721,7 @@ export class JkBmsCoreReactorLayout extends LitElement {
                             <div class="stat-value val-white clickable"
                                  @click=${(e) => this._navigate(e, EntityKey.power_tube_temperature)}>${mosTemp} ${getTempUnit(this.hass, this.config)}
                             </div>
-                        </div>` : ''}}
+                        </div>` : ''}
 
                         <div class="metric-group">
                             ${this._renderSparkline(EntityKey.delta_cell_voltage, '#41CD52')}
