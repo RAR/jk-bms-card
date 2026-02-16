@@ -2,7 +2,7 @@ export const EDITOR_NAME = 'jk-bms-content-card-editor';
 export const MAIN_NAME = 'jk-bms-card';
 
 export type SourceType = 'jk-bms' | 'yambms';
-export type BmsType = 'jk' | 'ecoworthy' | 'eg4' | 'jbd' | 'pace' | 'seplos-v1v2' | 'seplos-v3' | 'basen' | 'deye' | 'other';
+export type BmsType = 'jk-ble' | 'jk-rs485' | 'ecoworthy' | 'eg4' | 'jbd' | 'pace' | 'seplos-v1v2' | 'seplos-v3' | 'basen' | 'deye' | 'other';
 
 export enum EntityKey {
     delta_cell_voltage ='delta_cell_voltage',
@@ -231,11 +231,13 @@ export enum EntityKey {
 // Common YamBMS overrides — apply regardless of BMS type.
 // Only keys that differ from the JK BMS defaults need to be listed.
 export const YAMBMS_COMMON_MAP: Partial<Record<EntityKey, string>> = {
-    // SoC / capacity
+    // SoC / capacity (from bms_base_battery_soc.yaml, shared across all BMS types)
     [EntityKey.state_of_charge]: 'battery_soc',
     [EntityKey.capacity_remaining]: 'battery_capacity_remaining',
-    // Errors
+    // Errors (from bms_errors_bitmask_*.yaml)
     [EntityKey.errors]: 'errors_bitmask',
+    // Balancer trigger voltage (from bms_base_balancer.yaml: "balancer trigger voltage")
+    [EntityKey.balance_trigger_voltage]: 'balancer_trigger_voltage',
     // Cell voltages 1–9 are zero-padded in YamBMS ("cell voltage 01")
     [EntityKey.cell_voltage_1]: 'cell_voltage_01',
     [EntityKey.cell_voltage_2]: 'cell_voltage_02',
@@ -259,19 +261,39 @@ export const YAMBMS_COMMON_MAP: Partial<Record<EntityKey, string>> = {
 };
 
 // Per-BMS-type overrides layered on top of the common map.
-// Each BMS type in YamBMS may use different naming for temperatures, etc.
+// Each BMS type in YamBMS uses different naming conventions.
 export const YAMBMS_BMS_TYPE_MAP: Record<BmsType, Partial<Record<EntityKey, string>>> = {
-    // JK BMS: temperature names match the card defaults — no overrides needed
-    'jk': {},
-    // Ecoworthy: "cell temperature N", "mosfet temperature"
+    // JK BMS (BLE): names match card defaults for most sensors
+    'jk-ble': {
+        [EntityKey.charging]: 'charge_switch',
+        [EntityKey.discharging]: 'discharge_switch',
+        [EntityKey.balancer]: 'balance_switch',
+    },
+    // JK BMS (RS485 Modbus): very different naming from BLE
+    'jk-rs485': {
+        [EntityKey.total_voltage]: 'battery_voltage',
+        [EntityKey.current]: 'battery_current',
+        [EntityKey.power]: 'battery_power',
+        [EntityKey.delta_cell_voltage]: 'cell_delta_voltage',
+        [EntityKey.average_cell_voltage]: 'cell_average_voltage',
+        [EntityKey.min_voltage_cell]: 'cell_voltage_min_cell_number',
+        [EntityKey.max_voltage_cell]: 'cell_voltage_max_cell_number',
+        [EntityKey.total_battery_capacity_setting]: 'battery_capacity_total_setting',
+        [EntityKey.power_tube_temperature]: 'temperature_powertube',
+    },
+    // Ecoworthy RS485
     'ecoworthy': {
+        [EntityKey.average_cell_voltage]: 'cell_average_voltage',
+        [EntityKey.total_battery_capacity_setting]: 'total_capacity',
         [EntityKey.temperature_sensor_1]: 'cell_temperature_1',
         [EntityKey.temperature_sensor_2]: 'cell_temperature_2',
         [EntityKey.temperature_sensor_3]: 'cell_temperature_3',
         [EntityKey.temperature_sensor_4]: 'cell_temperature_4',
         [EntityKey.power_tube_temperature]: 'mosfet_temperature',
+        [EntityKey.charging]: 'charge_switch',
+        [EntityKey.discharging]: 'discharge_switch',
     },
-    // EG4: same naming as Ecoworthy
+    // EG4 LLV2 RS485: same temp naming as Ecoworthy
     'eg4': {
         [EntityKey.temperature_sensor_1]: 'cell_temperature_1',
         [EntityKey.temperature_sensor_2]: 'cell_temperature_2',
@@ -279,14 +301,14 @@ export const YAMBMS_BMS_TYPE_MAP: Record<BmsType, Partial<Record<EntityKey, stri
         [EntityKey.temperature_sensor_4]: 'cell_temperature_4',
         [EntityKey.power_tube_temperature]: 'mosfet_temperature',
     },
-    // JBD: "temperature N" (bare)
+    // JBD BLE/UART: "temperature N" (bare)
     'jbd': {
         [EntityKey.temperature_sensor_1]: 'temperature_1',
         [EntityKey.temperature_sensor_2]: 'temperature_2',
         [EntityKey.temperature_sensor_3]: 'temperature_3',
         [EntityKey.temperature_sensor_4]: 'temperature_4',
     },
-    // PACE: "battery temperature N", "mosfet temperature"
+    // PACE RS485: "battery temperature N", "mosfet temperature"
     'pace': {
         [EntityKey.temperature_sensor_1]: 'battery_temperature_1',
         [EntityKey.temperature_sensor_2]: 'battery_temperature_2',
@@ -294,7 +316,7 @@ export const YAMBMS_BMS_TYPE_MAP: Record<BmsType, Partial<Record<EntityKey, stri
         [EntityKey.temperature_sensor_4]: 'battery_temperature_4',
         [EntityKey.power_tube_temperature]: 'mosfet_temperature',
     },
-    // SEPLOS V1/V2: "temperature N", "mosfet temperature"
+    // SEPLOS V1/V2 RS485: "temperature N", "mosfet temperature"
     'seplos-v1v2': {
         [EntityKey.temperature_sensor_1]: 'temperature_1',
         [EntityKey.temperature_sensor_2]: 'temperature_2',
@@ -302,7 +324,7 @@ export const YAMBMS_BMS_TYPE_MAP: Record<BmsType, Partial<Record<EntityKey, stri
         [EntityKey.temperature_sensor_4]: 'temperature_4',
         [EntityKey.power_tube_temperature]: 'mosfet_temperature',
     },
-    // SEPLOS V3: cell_temp_N, power_temp (note: these use underscores in the name)
+    // SEPLOS V3 RS485: cell_temp_N, power_temp
     'seplos-v3': {
         [EntityKey.temperature_sensor_1]: 'cell_temp_1',
         [EntityKey.temperature_sensor_2]: 'cell_temp_2',
@@ -310,12 +332,12 @@ export const YAMBMS_BMS_TYPE_MAP: Record<BmsType, Partial<Record<EntityKey, stri
         [EntityKey.temperature_sensor_4]: 'cell_temp_4',
         [EntityKey.power_tube_temperature]: 'power_temp',
     },
-    // BASEN: "temperature sensor N" (matches default), "temperature MOSFET"
+    // BASEN RS485: "temperature sensor N" (matches default), "temperature MOSFET"
     'basen': {
         [EntityKey.power_tube_temperature]: 'temperature_mosfet',
     },
-    // DEYE CAN: no individual temp sensors available
+    // DEYE CAN: no individual temp sensors
     'deye': {},
-    // Other / unknown — no overrides, use defaults
+    // Other / unknown — no overrides
     'other': {},
 };

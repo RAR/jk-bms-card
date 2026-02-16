@@ -23,7 +23,9 @@ export const configOrEnum = (config: JkBmsCardConfig, entityId: EntityKey) => {
     // Apply YamBMS entity name mapping when source is 'yambms'
     if (config?.source === 'yambms') {
         // BMS-type-specific overrides take priority
-        const bmsType = config.bmsType ?? 'jk';
+        let bmsType = config.bmsType ?? 'jk-ble';
+        // Backwards compat: old configs may have 'jk' instead of 'jk-ble'
+        if (bmsType === ('jk' as any)) bmsType = 'jk-ble';
         const bmsMap = YAMBMS_BMS_TYPE_MAP[bmsType];
         if (bmsMap) {
             const bmsOverride = bmsMap[entityId];

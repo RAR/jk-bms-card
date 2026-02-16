@@ -74,7 +74,8 @@ export class JkBmsCardEditor extends LitElement implements LovelaceCardEditor {
                                 selector: {
                                     select: {
                                         options: [
-                                            { label: 'JK BMS', value: 'jk' },
+                                            { label: 'JK BMS (BLE)', value: 'jk-ble' },
+                                            { label: 'JK BMS (RS485)', value: 'jk-rs485' },
                                             { label: 'Ecoworthy', value: 'ecoworthy' },
                                             { label: 'EG4', value: 'eg4' },
                                             { label: 'JBD', value: 'jbd' },
