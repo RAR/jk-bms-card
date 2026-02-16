@@ -4,6 +4,7 @@ import { HomeAssistant, LovelaceCardEditor } from 'custom-card-helpers';
 import { EDITOR_NAME, EntityKey, MAIN_NAME } from './const';
 import { JkBmsCardConfig } from './interfaces';
 import { localize } from './localize/localize';
+import { getRelevantEntityIds, hasRelevantStateChanged } from './helpers/utils';
 
 import { version } from '../package.json';
 import { globalData } from './helpers/globals';
@@ -25,9 +26,22 @@ export class JkBmsCard extends LitElement {
     @property() public hass!: HomeAssistant;
     @property() private _config?: JkBmsCardConfig;
 
+    private _entityIds: Set<string> = new Set();
+
     public setConfig(config: JkBmsCardConfig): void {
         this._config = JkBmsCard.getStubConfig();
         this._config = { ...this._config, ...config };
+        this._entityIds = getRelevantEntityIds(this._config);
+    }
+
+    protected shouldUpdate(changedProps: Map<string, any>): boolean {
+        if (changedProps.has('_config')) return true;
+        if (changedProps.has('hass')) {
+            const oldHass = changedProps.get('hass') as HomeAssistant;
+            if (!oldHass || this._entityIds.size === 0) return true;
+            return hasRelevantStateChanged(this.hass, oldHass, this._entityIds);
+        }
+        return true;
     }
 
     static getStubConfig() {

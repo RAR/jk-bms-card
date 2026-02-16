@@ -309,14 +309,16 @@ export class JkBmsDefaultLayout extends LitElement {
     updated() {
         requestAnimationFrame(() => this._updateFlowLine());
     }
+    private _boundUpdateFlowLine = this._updateFlowLine.bind(this);
+
     connectedCallback() {
         super.connectedCallback();
-        window.addEventListener('resize', this._updateFlowLine.bind(this));
+        window.addEventListener('resize', this._boundUpdateFlowLine);
     }
 
     disconnectedCallback() {
         super.disconnectedCallback();
-        window.removeEventListener('resize', this._updateFlowLine.bind(this));
+        window.removeEventListener('resize', this._boundUpdateFlowLine);
     }
 
 
