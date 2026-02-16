@@ -18,6 +18,7 @@
     "cellOrientation": "Cell Orientation",
     "minCellVoltage": "Min Cell Voltage (V)",
     "maxCellVoltage": "Max Cell Voltage (V)",
+    "tempUnit": "Temperature unit",
     "manualAssignment": "Manual entity assignment",
     "tempSensorsCount": "Number of temperature sensors available",
     "hasHeater": "Heater option is used"

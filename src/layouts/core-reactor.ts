@@ -4,7 +4,7 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { EntityKey } from '../const';
 import { JkBmsCardConfig } from '../interfaces';
 import { globalData } from '../helpers/globals';
-import { configOrEnum, formatDeltaVoltage, getState, navigate, getRelevantEntityIds, hasRelevantStateChanged } from '../helpers/utils';
+import { configOrEnum, formatDeltaVoltage, getState, navigate, getRelevantEntityIds, hasRelevantStateChanged, getTempUnit } from '../helpers/utils';
 
 @customElement('jk-bms-core-reactor-layout')
 export class JkBmsCoreReactorLayout extends LitElement {
@@ -719,9 +719,9 @@ export class JkBmsCoreReactorLayout extends LitElement {
                             ${this._renderSparkline(EntityKey.power_tube_temperature, '#FFA500')}
                             <div class="stat-label">MOS Temp:</div>
                             <div class="stat-value val-white clickable"
-                                 @click=${(e) => this._navigate(e, EntityKey.power_tube_temperature)}>${mosTemp} °C
+                                 @click=${(e) => this._navigate(e, EntityKey.power_tube_temperature)}>${mosTemp} ${getTempUnit(this.hass, this.config)}
                             </div>
-                        </div>` : ''}
+                        </div>` : ''}}
 
                         <div class="metric-group">
                             ${this._renderSparkline(EntityKey.delta_cell_voltage, '#41CD52')}

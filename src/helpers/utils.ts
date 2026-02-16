@@ -71,6 +71,32 @@ export const getState = (hass: HomeAssistant, config: JkBmsCardConfig, entityKey
 }
 
 /**
+ * Resolve the temperature unit symbol for display.
+ * If config.tempUnit is 'auto' (default), reads the unit_of_measurement
+ * attribute from the first available temperature entity in HA.
+ */
+export const getTempUnit = (hass: HomeAssistant, config: JkBmsCardConfig): string => {
+    if (config?.tempUnit && config.tempUnit !== 'auto') return config.tempUnit;
+
+    // Auto-detect from the first temp entity that exists
+    const tempKeys = [
+        EntityKey.temperature_sensor_1,
+        EntityKey.temperature_sensor_2,
+        EntityKey.power_tube_temperature,
+    ];
+    for (const key of tempKeys) {
+        const val = configOrEnum(config, key);
+        if (!val) continue;
+        const entityId = val.includes('sensor.') ? val : `sensor.${config.prefix}_${val}`;
+        const entity = hass?.states[entityId];
+        if (entity?.attributes?.unit_of_measurement) {
+            return entity.attributes.unit_of_measurement;
+        }
+    }
+    return '°C';
+};
+
+/**
  * Build the set of HA entity IDs this card config cares about.
  * Used by shouldUpdate() to skip renders when unrelated entities change.
  */

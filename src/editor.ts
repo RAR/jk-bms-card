@@ -147,6 +147,18 @@ export class JkBmsCardEditor extends LitElement implements LovelaceCardEditor {
                                 }
                             },
                             { name: 'minCellVoltage', selector: { number: { min: 2.0, max: 4.0, step: 0.01, mode: 'box' } } },
+                            {
+                                name: 'tempUnit',
+                                selector: {
+                                    select: {
+                                        options: [
+                                            { label: 'Auto (from entity)', value: 'auto' },
+                                            { label: 'Celsius (°C)', value: '°C' },
+                                            { label: 'Fahrenheit (°F)', value: '°F' }
+                                        ]
+                                    }
+                                }
+                            },
                         ],
                     },
                     {

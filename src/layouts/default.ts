@@ -5,7 +5,7 @@ import { EntityKey } from '../const';
 import { JkBmsCardConfig } from '../interfaces';
 import { localize } from '../localize/localize';
 import { globalData } from '../helpers/globals';
-import {navigate, getState, configOrEnum, formatDeltaVoltage, getRelevantEntityIds, hasRelevantStateChanged} from '../helpers/utils';
+import {navigate, getState, configOrEnum, formatDeltaVoltage, getRelevantEntityIds, hasRelevantStateChanged, getTempUnit} from '../helpers/utils';
 
 @customElement('jk-bms-default-layout')
 export class JkBmsDefaultLayout extends LitElement {
@@ -243,6 +243,7 @@ export class JkBmsDefaultLayout extends LitElement {
         const powerNumber = parseFloat(this.getState(EntityKey.power, 2, '0'));
         const triggerV = Number(this.getState(EntityKey.balance_trigger_voltage, 2, "", "number"));
         const mosTemp = this.getState(EntityKey.power_tube_temperature);
+        const tempUnit = getTempUnit(this.hass, this.config);
 
         this.shouldBalance = this.maxDeltaV >= triggerV;
 
@@ -291,7 +292,7 @@ export class JkBmsDefaultLayout extends LitElement {
               ${localize('stats.remainingAmps')} <span class="clickable" @click=${(e) => this._navigate(e, EntityKey.capacity_remaining)}>${this.getState(EntityKey.capacity_remaining)} Ah</span><br>
               ${localize('stats.cycles')} <span class="clickable" @click=${(e) => this._navigate(e, EntityKey.charging_cycles)}>${this.getState(EntityKey.charging_cycles)}</span><br>
               ${localize('stats.delta')} <span class="${deltaClass}" @click=${(e) => this._navigate(e, EntityKey.delta_cell_voltage)}> ${formatDeltaVoltage(this.config.deltaVoltageUnit, this.maxDeltaV)} </span><br>
-              ${mosTemp ? html`${localize('stats.mosfetTemp')} <span class="clickable" @click=${(e) => this._navigate(e, EntityKey.power_tube_temperature)}>${mosTemp} °C</span>` : ''}
+              ${mosTemp ? html`${localize('stats.mosfetTemp')} <span class="clickable" @click=${(e) => this._navigate(e, EntityKey.power_tube_temperature)}>${mosTemp} ${tempUnit}</span>` : ''}
               ${this._renderTemps(2)}
           </div>
         </div>
@@ -333,9 +334,10 @@ export class JkBmsDefaultLayout extends LitElement {
     private _renderTemps(placement): TemplateResult {
         const sensors: TemplateResult[] = [];
         const sensorsCount = this.config?.tempSensorsCount ?? 0;
+        const tempUnit = getTempUnit(this.hass, this.config);
         for (let i = placement; i <= sensorsCount; i += 2) {
             sensors.push(html`
-                <br>${localize('stats.temperature_sensor_' + i)} <span class="clickable" @click=${(e) => this._navigate(e, EntityKey['temperature_sensor_' + i])}>${this.getState(EntityKey['temperature_sensor_' + i])} °C</span>`);
+                <br>${localize('stats.temperature_sensor_' + i)} <span class="clickable" @click=${(e) => this._navigate(e, EntityKey['temperature_sensor_' + i])}>${this.getState(EntityKey['temperature_sensor_' + i])} ${tempUnit}</span>`);
         }
 
         return html`${sensors}`;

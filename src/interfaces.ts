@@ -13,6 +13,7 @@ export interface JkBmsCardConfig extends LovelaceCardConfig {
     deltaVoltageUnit?: 'V' | 'mV';
     cellColorMode?: 'progress' | 'gradient';
     cellOrientation?: 'vertical' | 'horizontal';
+    tempUnit?: 'auto' | '°C' | '°F';
     minCellVoltage?: number;
     maxCellVoltage?: number;
     entities: Record<EntityKey, string>;
