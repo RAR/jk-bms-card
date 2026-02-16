@@ -21,7 +21,11 @@ export class JkBmsCardEditor extends LitElement implements LovelaceCardEditor {
             return html``;
         }
 
-        const entityConfigs = Object.values(EntityKey).map((key: string) => ({ name: key, selector: { entity: {} } }))
+        // Only show manual entity pickers for non-cell entities.
+        // Cell voltages/resistances (192 entries!) are auto-resolved from prefix + cellCount.
+        const entityConfigs = Object.values(EntityKey)
+            .filter((key: string) => !key.startsWith('cell_voltage_') && !key.startsWith('cell_resistance_'))
+            .map((key: string) => ({ name: key, selector: { entity: {} } }));
 
         return html`
 			<ha-form
