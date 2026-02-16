@@ -438,9 +438,9 @@ export class JkBmsCoreReactorLayout extends LitElement {
             EntityKey.delta_cell_voltage
         ];
 
-        let changed = false;
         const now = Date.now();
         const oneHourAgo = now - 60 * 60 * 1000;
+        let changed = false;
 
         keys.forEach(key => {
             const entityId = this._resolveEntityId(key);
@@ -450,25 +450,28 @@ export class JkBmsCoreReactorLayout extends LitElement {
             if (!stateObj) return;
 
             const val = parseFloat(stateObj.state);
-            const time = new Date(stateObj.last_updated).getTime();
-
             if (isNaN(val)) return;
 
+            const lastUpdated = new Date(stateObj.last_updated).getTime();
             const currentHistory = this.historyData[entityId] || [];
             const lastEntry = currentHistory.length > 0 ? currentHistory[currentHistory.length - 1] : null;
 
-            // Only append if it's a new update (time > last time)
-            if (!lastEntry || time > lastEntry.time) {
-                // Create new array to trigger reactivity if needed, or just push
-                // For Lit reactivity on objects/arrays, purely pushing might not trigger unless we reassign or requestUpdate
-                // But efficient way is:
-                const newHistoryList = [...currentHistory, { state: val, time: time }];
-
-                // Prune old
+            // Append if this is a genuinely new update (entity changed)
+            if (!lastEntry || lastUpdated > lastEntry.time) {
+                const newHistoryList = [...currentHistory, { state: val, time: lastUpdated }];
                 while (newHistoryList.length > 0 && newHistoryList[0].time < oneHourAgo) {
                     newHistoryList.shift();
                 }
-
+                this.historyData = { ...this.historyData, [entityId]: newHistoryList };
+                changed = true;
+            } else if (lastEntry && now - lastEntry.time > 30000) {
+                // For slow-updating entities (e.g. EG4 mosfet temp), carry forward
+                // the current value every 30s so the sparkline stays current and
+                // doesn't appear to flatline or go stale.
+                const newHistoryList = [...currentHistory, { state: val, time: now }];
+                while (newHistoryList.length > 0 && newHistoryList[0].time < oneHourAgo) {
+                    newHistoryList.shift();
+                }
                 this.historyData = { ...this.historyData, [entityId]: newHistoryList };
                 changed = true;
             }
@@ -511,21 +514,42 @@ export class JkBmsCoreReactorLayout extends LitElement {
             });
 
             if (response) {
-                const newHistory = {};
-                // Response is an object: { "entity_id": [ { s: state, lu: last_updated_timestamp }, ... ] }
-                // or just standard history objects depending on HA version, but 'minimal_response' gives shorthand.
+                const oneHourAgo = Date.now() - 60 * 60 * 1000;
+                const merged = { ...this.historyData };
 
                 Object.keys(response).forEach(entityId => {
                     const historyList = response[entityId];
-                    if (Array.isArray(historyList)) {
-                        newHistory[entityId] = historyList.map(entry => ({
-                            // 's' is state, 'lu' is last_updated (seconds since epoch)
-                            state: parseFloat(entry.s || entry.state),
-                            time: (entry.lu || new Date(entry.last_updated).getTime() / 1000) * 1000
-                        })).filter(e => !isNaN(e.state));
+                    if (!Array.isArray(historyList)) return;
+
+                    const wsPoints = historyList.map(entry => ({
+                        state: parseFloat(entry.s || entry.state),
+                        time: (entry.lu || new Date(entry.last_updated).getTime() / 1000) * 1000
+                    })).filter(e => !isNaN(e.state));
+
+                    // Merge with any existing realtime points that are newer
+                    // than the last WS history point
+                    const existing = this.historyData[entityId] || [];
+                    const wsLatest = wsPoints.length > 0 ? wsPoints[wsPoints.length - 1].time : 0;
+                    const newerRealtime = existing.filter(p => p.time > wsLatest);
+
+                    // Combine, deduplicate by time, sort, and prune old
+                    const combined = [...wsPoints, ...newerRealtime];
+                    const seen = new Set<number>();
+                    const deduped = combined.filter(p => {
+                        if (seen.has(p.time)) return false;
+                        seen.add(p.time);
+                        return true;
+                    });
+                    deduped.sort((a, b) => a.time - b.time);
+
+                    // Prune points older than 1 hour
+                    while (deduped.length > 0 && deduped[0].time < oneHourAgo) {
+                        deduped.shift();
                     }
+
+                    merged[entityId] = deduped;
                 });
-                this.historyData = { ...this.historyData, ...newHistory };
+                this.historyData = merged;
             }
         } catch (e) {
             console.warn("JK BMS Card: Failed to fetch history via WS", e);
