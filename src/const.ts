@@ -1,6 +1,8 @@
 export const EDITOR_NAME = 'jk-bms-content-card-editor';
 export const MAIN_NAME = 'jk-bms-card';
 
+export type SourceType = 'jk-bms' | 'yambms';
+
 export enum EntityKey {
     delta_cell_voltage ='delta_cell_voltage',
     balancing_current ='balancing_current',
@@ -224,3 +226,33 @@ export enum EntityKey {
     temperature_sensor_3 ='temperature_sensor_3',
     temperature_sensor_4 ='temperature_sensor_4',
 }
+
+// YamBMS uses different sensor name slugs for some entities.
+// Only keys that differ from the JK BMS defaults need to be listed here.
+export const YAMBMS_ENTITY_MAP: Partial<Record<EntityKey, string>> = {
+    // SoC / capacity
+    [EntityKey.state_of_charge]: 'battery_soc',
+    [EntityKey.capacity_remaining]: 'battery_capacity_remaining',
+    // Errors
+    [EntityKey.errors]: 'errors_bitmask',
+    // Cell voltages 1–9 are zero-padded in YamBMS ("cell voltage 01")
+    [EntityKey.cell_voltage_1]: 'cell_voltage_01',
+    [EntityKey.cell_voltage_2]: 'cell_voltage_02',
+    [EntityKey.cell_voltage_3]: 'cell_voltage_03',
+    [EntityKey.cell_voltage_4]: 'cell_voltage_04',
+    [EntityKey.cell_voltage_5]: 'cell_voltage_05',
+    [EntityKey.cell_voltage_6]: 'cell_voltage_06',
+    [EntityKey.cell_voltage_7]: 'cell_voltage_07',
+    [EntityKey.cell_voltage_8]: 'cell_voltage_08',
+    [EntityKey.cell_voltage_9]: 'cell_voltage_09',
+    // Cell resistances 1–9 are zero-padded in YamBMS ("cell resistance 01")
+    [EntityKey.cell_resistance_1]: 'cell_resistance_01',
+    [EntityKey.cell_resistance_2]: 'cell_resistance_02',
+    [EntityKey.cell_resistance_3]: 'cell_resistance_03',
+    [EntityKey.cell_resistance_4]: 'cell_resistance_04',
+    [EntityKey.cell_resistance_5]: 'cell_resistance_05',
+    [EntityKey.cell_resistance_6]: 'cell_resistance_06',
+    [EntityKey.cell_resistance_7]: 'cell_resistance_07',
+    [EntityKey.cell_resistance_8]: 'cell_resistance_08',
+    [EntityKey.cell_resistance_9]: 'cell_resistance_09',
+};

@@ -31,6 +31,28 @@ export class JkBmsCardEditor extends LitElement implements LovelaceCardEditor {
 				.schema=${[
                 {
                     type: 'grid',
+                    title: localize('config.source'),
+                    schema: [
+                        {
+                            type: 'grid',
+                            schema: [
+                                {
+                                    name: 'source',
+                                    selector: {
+                                        select: {
+                                            options: [
+                                                { label: 'JK BMS (direct)', value: 'jk-bms' },
+                                                { label: 'YamBMS (sub-device)', value: 'yambms' }
+                                            ]
+                                        }
+                                    }
+                                },
+                            ],
+                        },
+                    ],
+                },
+                {
+                    type: 'grid',
                     title: localize('config.title'),
                     schema: [
                         {

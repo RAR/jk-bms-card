@@ -1,5 +1,5 @@
 import {HomeAssistant} from 'custom-card-helpers';
-import {EntityKey} from '../const';
+import {EntityKey, YAMBMS_ENTITY_MAP} from '../const';
 import {JkBmsCardConfig} from '../interfaces';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -19,7 +19,13 @@ export function fireEvent(node: HTMLElement, type: string, detail: any, options?
 
 export const configOrEnum = (config: JkBmsCardConfig, entityId: EntityKey) => {
     const configValue = config?.entities[entityId]?.toString()?.trim();
-    return configValue && configValue.length > 1 ? configValue : entityId?.toString();
+    if (configValue && configValue.length > 1) return configValue;
+    // Apply YamBMS entity name mapping when source is 'yambms'
+    if (config?.source === 'yambms') {
+        const mapped = YAMBMS_ENTITY_MAP[entityId];
+        if (mapped) return mapped;
+    }
+    return entityId?.toString();
 }
 
 export const navigate = (event, config: JkBmsCardConfig, entityId: EntityKey, type: "sensor" | "switch" | "number" = "sensor") => {
