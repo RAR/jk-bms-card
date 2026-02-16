@@ -235,6 +235,12 @@ export const YAMBMS_ENTITY_MAP: Partial<Record<EntityKey, string>> = {
     [EntityKey.capacity_remaining]: 'battery_capacity_remaining',
     // Errors
     [EntityKey.errors]: 'errors_bitmask',
+    // Temperature sensors ("cell temperature N" in Ecoworthy YamBMS)
+    [EntityKey.temperature_sensor_1]: 'cell_temperature_1',
+    [EntityKey.temperature_sensor_2]: 'cell_temperature_2',
+    [EntityKey.temperature_sensor_3]: 'cell_temperature_3',
+    [EntityKey.temperature_sensor_4]: 'cell_temperature_4',
+    [EntityKey.power_tube_temperature]: 'mosfet_temperature',
     // Cell voltages 1–9 are zero-padded in YamBMS ("cell voltage 01")
     [EntityKey.cell_voltage_1]: 'cell_voltage_01',
     [EntityKey.cell_voltage_2]: 'cell_voltage_02',
