@@ -1,6 +1,7 @@
 import {HomeAssistant} from 'custom-card-helpers';
 import {EntityKey, YAMBMS_COMMON_MAP, YAMBMS_BMS_TYPE_MAP} from '../const';
 import {JkBmsCardConfig} from '../interfaces';
+import {globalData} from './globals';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function fireEvent(node: HTMLElement, type: string, detail: any, options?: any) {
@@ -46,7 +47,17 @@ export const navigate = (event, config: JkBmsCardConfig, entityId: EntityKey, ty
     event.stopPropagation();
 
     const configValue = configOrEnum(config, entityId);
-    const fullEntityId = configValue.includes('sensor.') || configValue.includes('switch.') || configValue.includes('number.') ? configValue : type + "." + config?.prefix + "_" + configValue;
+    let fullEntityId = configValue.includes('sensor.') || configValue.includes('switch.') || configValue.includes('binary_sensor.') || configValue.includes('number.') ? configValue : type + "." + config?.prefix + "_" + configValue;
+
+    // Fallback: if a switch entity doesn't exist, try binary_sensor instead
+    if (type === 'switch' && !configValue.includes('.')) {
+        const hass = (globalData as any).hass as HomeAssistant | undefined;
+        if (hass && !hass.states[fullEntityId]) {
+            const fallback = `binary_sensor.${config?.prefix}_${configValue}`;
+            if (hass.states[fallback]) fullEntityId = fallback;
+        }
+    }
+
     let customEvent = new CustomEvent('hass-more-info', {
         detail: {entityId: fullEntityId},
         composed: true,
@@ -59,7 +70,13 @@ export const getState = (hass: HomeAssistant, config: JkBmsCardConfig, entityKey
     if (!configValue)
         return defaultValue;
 
-    const entityId = configValue.includes('sensor.') || configValue.includes('switch.') || configValue.includes('number.') ? configValue : `${type}.${config!.prefix}_${configValue}`;
+    let entityId = configValue.includes('sensor.') || configValue.includes('switch.') || configValue.includes('binary_sensor.') || configValue.includes('number.') ? configValue : `${type}.${config!.prefix}_${configValue}`;
+
+    // Fallback: if a switch entity doesn't exist, try binary_sensor instead
+    if (type === 'switch' && !configValue.includes('.') && !hass?.states[entityId]) {
+        entityId = `binary_sensor.${config!.prefix}_${configValue}`;
+    }
+
     const entity = hass?.states[entityId];
     const state = entity?.state;
     const stateNumeric = Number(state);
@@ -121,9 +138,12 @@ export const getRelevantEntityIds = (config: JkBmsCardConfig): Set<string> => {
         EntityKey.total_runtime_formatted,
     ].forEach(k => resolve(k));
 
-    // Switches
+    // Switches (also register binary_sensor fallbacks)
     [EntityKey.charging, EntityKey.discharging, EntityKey.balancer, EntityKey.heater]
-        .forEach(k => resolve(k, 'switch'));
+        .forEach(k => {
+            resolve(k, 'switch');
+            resolve(k, 'binary_sensor');
+        });
 
     // Numbers
     resolve(EntityKey.balance_trigger_voltage, 'number');

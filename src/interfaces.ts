@@ -16,5 +16,6 @@ export interface JkBmsCardConfig extends LovelaceCardConfig {
     tempUnit?: 'auto' | '°C' | '°F';
     minCellVoltage?: number;
     maxCellVoltage?: number;
+    sparklineHours?: number;
     entities: Record<EntityKey, string>;
 }

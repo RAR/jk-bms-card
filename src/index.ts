@@ -55,6 +55,7 @@ export class JkBmsCard extends LitElement {
             cellLayout: "bankMode",
             tempSensorsCount: 0,
             hasHeater: 0,
+            sparklineHours: 12,
             entities: Object.keys(EntityKey).reduce((acc, key) => {
                 acc[key as EntityKey] = '';
                 return acc;

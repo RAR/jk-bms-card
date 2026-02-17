@@ -439,7 +439,8 @@ export class JkBmsCoreReactorLayout extends LitElement {
         ];
 
         const now = Date.now();
-        const oneHourAgo = now - 60 * 60 * 1000;
+        const historyMs = (this.config?.sparklineHours ?? 12) * 60 * 60 * 1000;
+        const cutoff = now - historyMs;
         let changed = false;
 
         keys.forEach(key => {
@@ -459,7 +460,7 @@ export class JkBmsCoreReactorLayout extends LitElement {
             // Append if this is a genuinely new update (entity changed)
             if (!lastEntry || lastUpdated > lastEntry.time) {
                 const newHistoryList = [...currentHistory, { state: val, time: lastUpdated }];
-                while (newHistoryList.length > 0 && newHistoryList[0].time < oneHourAgo) {
+                while (newHistoryList.length > 0 && newHistoryList[0].time < cutoff) {
                     newHistoryList.shift();
                 }
                 this.historyData = { ...this.historyData, [entityId]: newHistoryList };
@@ -469,7 +470,7 @@ export class JkBmsCoreReactorLayout extends LitElement {
                 // the current value every 30s so the sparkline stays current and
                 // doesn't appear to flatline or go stale.
                 const newHistoryList = [...currentHistory, { state: val, time: now }];
-                while (newHistoryList.length > 0 && newHistoryList[0].time < oneHourAgo) {
+                while (newHistoryList.length > 0 && newHistoryList[0].time < cutoff) {
                     newHistoryList.shift();
                 }
                 this.historyData = { ...this.historyData, [entityId]: newHistoryList };
@@ -500,7 +501,8 @@ export class JkBmsCoreReactorLayout extends LitElement {
         if (uniqueEntities.length === 0) return;
 
         const endTime = new Date();
-        const startTime = new Date(endTime.getTime() - 60 * 60 * 1000); // 1 hour ago
+        const historyMs = (this.config?.sparklineHours ?? 12) * 60 * 60 * 1000;
+        const startTime = new Date(endTime.getTime() - historyMs);
 
         try {
             // Using WebSocket API for history
@@ -514,7 +516,7 @@ export class JkBmsCoreReactorLayout extends LitElement {
             });
 
             if (response) {
-                const oneHourAgo = Date.now() - 60 * 60 * 1000;
+                const fetchCutoff = Date.now() - (this.config?.sparklineHours ?? 12) * 60 * 60 * 1000;
                 const merged = { ...this.historyData };
 
                 Object.keys(response).forEach(entityId => {
@@ -543,7 +545,7 @@ export class JkBmsCoreReactorLayout extends LitElement {
                     deduped.sort((a, b) => a.time - b.time);
 
                     // Prune points older than 1 hour
-                    while (deduped.length > 0 && deduped[0].time < oneHourAgo) {
+                    while (deduped.length > 0 && deduped[0].time < fetchCutoff) {
                         deduped.shift();
                     }
 

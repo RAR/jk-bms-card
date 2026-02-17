@@ -188,6 +188,7 @@ export class JkBmsCardEditor extends LitElement implements LovelaceCardEditor {
                                 }
                             },
                             { name: 'maxCellVoltage', selector: { number: { min: 2.0, max: 4.0, step: 0.01, mode: 'box' } } },
+                            { name: 'sparklineHours', selector: { number: { min: 1, max: 48, step: 1, mode: 'box' } } },
                         ],
                     },
                 ],

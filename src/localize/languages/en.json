@@ -21,7 +21,8 @@
     "tempUnit": "Temperature unit",
     "manualAssignment": "Manual entity assignment",
     "tempSensorsCount": "Number of temperature sensors available",
-    "hasHeater": "Heater option is used"
+    "hasHeater": "Heater option is used",
+    "sparklineHours": "Sparkline history (hours)"
   },
   "switches": {
     "charge": "Charge",
