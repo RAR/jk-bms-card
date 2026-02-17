@@ -49,12 +49,21 @@ export const navigate = (event, config: JkBmsCardConfig, entityId: EntityKey, ty
     const configValue = configOrEnum(config, entityId);
     let fullEntityId = configValue.includes('sensor.') || configValue.includes('switch.') || configValue.includes('binary_sensor.') || configValue.includes('number.') ? configValue : type + "." + config?.prefix + "_" + configValue;
 
-    // Fallback: if a switch entity doesn't exist, try binary_sensor instead
+    // Fallback chain for switches: try binary_sensor with same suffix,
+    // then binary_sensor with the raw entity key name (e.g. 'charging')
     if (type === 'switch' && !configValue.includes('.')) {
         const hass = (globalData as any).hass as HomeAssistant | undefined;
         if (hass && !hass.states[fullEntityId]) {
-            const fallback = `binary_sensor.${config?.prefix}_${configValue}`;
-            if (hass.states[fallback]) fullEntityId = fallback;
+            const bsFallback = `binary_sensor.${config?.prefix}_${configValue}`;
+            if (hass.states[bsFallback]) {
+                fullEntityId = bsFallback;
+            } else {
+                const rawKey = entityId?.toString();
+                if (rawKey && rawKey !== configValue) {
+                    const bsRawFallback = `binary_sensor.${config?.prefix}_${rawKey}`;
+                    if (hass.states[bsRawFallback]) fullEntityId = bsRawFallback;
+                }
+            }
         }
     }
 
@@ -72,9 +81,21 @@ export const getState = (hass: HomeAssistant, config: JkBmsCardConfig, entityKey
 
     let entityId = configValue.includes('sensor.') || configValue.includes('switch.') || configValue.includes('binary_sensor.') || configValue.includes('number.') ? configValue : `${type}.${config!.prefix}_${configValue}`;
 
-    // Fallback: if a switch entity doesn't exist, try binary_sensor instead
+    // Fallback chain for switches: try binary_sensor with same suffix,
+    // then binary_sensor with the raw entity key name (e.g. 'charging')
     if (type === 'switch' && !configValue.includes('.') && !hass?.states[entityId]) {
-        entityId = `binary_sensor.${config!.prefix}_${configValue}`;
+        const bsFallback = `binary_sensor.${config!.prefix}_${configValue}`;
+        if (hass?.states[bsFallback]) {
+            entityId = bsFallback;
+        } else {
+            const rawKey = entityKey?.toString();
+            if (rawKey && rawKey !== configValue) {
+                const bsRawFallback = `binary_sensor.${config!.prefix}_${rawKey}`;
+                if (hass?.states[bsRawFallback]) {
+                    entityId = bsRawFallback;
+                }
+            }
+        }
     }
 
     const entity = hass?.states[entityId];
@@ -138,11 +159,20 @@ export const getRelevantEntityIds = (config: JkBmsCardConfig): Set<string> => {
         EntityKey.total_runtime_formatted,
     ].forEach(k => resolve(k));
 
-    // Switches (also register binary_sensor fallbacks)
+    // Switches (also register binary_sensor fallbacks with both mapped and raw key names)
     [EntityKey.charging, EntityKey.discharging, EntityKey.balancer, EntityKey.heater]
         .forEach(k => {
             resolve(k, 'switch');
             resolve(k, 'binary_sensor');
+            // Also register the raw key name as binary_sensor in case the mapped
+            // name differs (e.g. ecoworthy secondary: switch name is 'charge_switch'
+            // but binary_sensor is 'charging')
+            const rawKey = k.toString();
+            const mapped = configOrEnum(config, k);
+            if (mapped && mapped !== rawKey && !mapped.includes('.')) {
+                const rawId = `binary_sensor.${config.prefix}_${rawKey}`;
+                ids.add(rawId);
+            }
         });
 
     // Numbers
